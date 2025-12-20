@@ -78,7 +78,9 @@ pub fn eigenvalue_with_qr(
     error_thershold: f64,
 ) -> Result<(Vector, f64), String> {
     match similar_matrix(matrix) {
+        Err(error_msg) => Err(error_msg),
         Ok(_) => match shift_qr_algorithm(matrix, max_iter, error_thershold) {
+            Err(error_msg) => Err(error_msg),
             Ok(tuple) => {
                 let matrix_s: Matrix = tuple.0;
                 let difference: f64 = tuple.1;
@@ -89,49 +91,19 @@ pub fn eigenvalue_with_qr(
 
                 Ok((Vector::from_vec(&eigenvalue), difference))
             }
-
-            Err(error_msg) => Err(error_msg),
-        },
-
-        Err(error_msg) => Err(error_msg),
+        }
     }
 }
 
 /// ## Can not return complex eigenvector
-pub fn eigenvector_wirh_qr(
+pub fn eigenvector(
     matrix: &Matrix,
-    max_iter: u32,
-    error_thershold: f64,
-) -> Result<((Vector, f64)), String> {
-    match shift_qr_algorithm(matrix, max_iter, error_thershold) {
-        Ok(tuple) => {
-            let matrix_s: Matrix = tuple.0;
-            let difference: f64 = tuple.1;
-
-            matrix_s.display();
-            let mut modified_matrix = matrix.clone();
-            for d in 0..modified_matrix.row {
-                modified_matrix.entries[d][d] -= matrix_s.entries[0][0];
-            }
-
-            match solve::gauss_jordan_elimination(
-                &modified_matrix,
-                &Vector::zeros(modified_matrix.col),
-            ) {
-                Ok(tuple) => {
-                    match solve::upper_triangular(&tuple.0, &Vector::zeros(matrix_s.col)) {
-                        Ok(eigen_vector) => Ok((
-                            eigen_vector.swap_with_permutation(&tuple.2).unwrap(),
-                            difference,
-                        )),
-                        Err(error_msg) => Err(error_msg),
-                    }
-                }
-
-                Err(error_msg) => Err(error_msg),
-            }
-        }
-
-        Err(error_msg) => Err(error_msg),
+    eigen_value: f64,
+) -> Result<Matrix, String> {
+    if matrix.row != matrix.col {
+        return Err("Input Error: The input matrix is not square.".to_string());
     }
+    let eigen_kernel = Matrix::identity(matrix.row).multiply_scalar(&eigen_value).substract_Matrix(&matrix.clone()).unwrap();
+    
+    Ok(solve::null_space(&eigen_kernel))
 }

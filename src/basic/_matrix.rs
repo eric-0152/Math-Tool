@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::vector::Vector;
 use rand::Rng;
 
@@ -59,6 +61,14 @@ impl Matrix {
         Ok(Vector::from_vec(&col_vector))
     }
 
+    pub fn get_row_vector(self: &Self, row: usize) -> Result<Vector, String> {
+        if row > self.row {
+            return Err("Input Error: Input col is out of bound.".to_string());
+        }
+
+        Ok(Vector::from_vec(&self.entries[row].clone()))
+    }
+
     /// Return the matrix that round to the digit after decimal point.
     pub fn round(self: &Self, digit: u32) -> Matrix {
         let mut result_matrix: Matrix = self.clone();
@@ -81,8 +91,27 @@ impl Matrix {
         result_matrix
     }
 
+    pub fn replace_nan(self: &Self) -> Matrix {
+        let mut result_matrix = self.clone();
+        for r in 0..result_matrix.row {
+            for c in 0..result_matrix.col {
+                if result_matrix.entries[r][c].is_nan() {
+                    result_matrix.entries[r][c] = 0.0;
+                }
+            }
+        }
+
+        result_matrix
+    }
+
     pub fn display(self: &Self) {
-        if self.row == 1 {
+        if self.row == 0 {
+            println!(
+                "Matrix: [[]], shape: {} x {}",
+                self.row, self.col
+            );
+            return;
+        } else if self.row == 1 {
             println!(
                 "Matrix: [{:?}], shape: {} x {}",
                 self.entries[0], self.row, self.col
@@ -301,6 +330,14 @@ impl Matrix {
     ///
     /// If axis == 1 : append vector as a column.
     pub fn append_Vector(self: &Self, vector: &Vector, axis: usize) -> Result<Matrix, String> {
+        if self.row == 0 {
+            match axis {
+            x if x == 0 => return Ok(vector.to_Matrix(0).unwrap()),
+            x if x == 1 => return Ok(vector.to_Matrix(1).unwrap()),
+            _ => return Err("Input Error: Input axis is not valid.".to_string())
+            }
+        }
+        
         match axis {
             x if x == 0 => {
                 if self.col != vector.size {
@@ -346,6 +383,14 @@ impl Matrix {
     ///   
     /// If axis == 1 : append matirx to the right.
     pub fn append_Matrix(self: &Self, matrix: &Matrix, axis: usize) -> Result<Matrix, String> {
+        if self.row == 0 {
+            match axis {
+            x if x == 0 => return Ok(matrix.clone()),
+            x if x == 1 => return Ok(matrix.clone()),
+            _ => return Err("Input Error: Input axis is not valid.".to_string())
+            }
+        }
+
         match axis {
             x if x == 0 => {
                 if self.col != matrix.col {
@@ -472,7 +517,7 @@ impl Matrix {
         }
 
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..result_matrix.col {
+        for r in 0..result_matrix.row {
             result_matrix.entries[r][col1] = self.entries[r][col2];
             result_matrix.entries[r][col2] = self.entries[r][col1];
         }
@@ -671,16 +716,15 @@ impl Matrix {
 
     pub fn is_invertible(self: &Self) -> bool {
         match self.determinant() {
+            Err(_) => {
+                return false;
+            }
             Ok(d) => {
                 if d != 0.0 {
                     return true;
                 } else {
                     return false;
                 }
-            }
-
-            Err(_) => {
-                return false;
             }
         }
     }
@@ -721,19 +765,6 @@ impl Matrix {
         for r in 0..self.row {
             for c in 0..self.col {
                 result_matrix.entries[r][c] = result_matrix.entries[r][c].sqrt();
-            }
-        }
-
-        result_matrix
-    }
-
-    pub fn replace_nan(self: &Self) -> Matrix {
-        let mut result_matrix = self.clone();
-        for r in 0..result_matrix.row {
-            for c in 0..result_matrix.col {
-                if result_matrix.entries[r][c].is_nan() {
-                    result_matrix.entries[r][c] = 0.0;
-                }
             }
         }
 

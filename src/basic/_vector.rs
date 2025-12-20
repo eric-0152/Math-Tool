@@ -35,6 +35,18 @@ impl Vector {
         result_vector
     }
 
+    pub fn replace_nan(self: &Self) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..result_vector.size {
+            if result_vector.entries[e].is_nan() {
+                result_vector.entries[e] = 0.0;
+            
+            }
+        }
+
+        result_vector
+    }
+
     pub fn display(self: &Self) {
         println!("Vector:  {:8?}, size: {}", self.entries, self.size);
     }
@@ -189,6 +201,17 @@ impl Vector {
         Ok(result_Vector)
     }
 
+    pub fn remove(self: &Self, index: usize) -> Result<Vector, String> {
+        if index >= self.size {
+            return Err("Input Error: The input index is out of bound.".to_string());
+        }
+
+        let mut entrie_vec: Vec<f64> = self.entries.clone();
+        entrie_vec.remove(index);
+        
+        Ok(Vector::from_vec(&entrie_vec))
+    }
+
     /// Swap the element according to the order of permutaion matrix.
     pub fn swap_with_permutation(self: &Self, permutation: &Matrix) -> Result<Vector, String> {
         if self.size != permutation.row {
@@ -312,18 +335,6 @@ impl Vector {
         let mut result_vector: Vector = self.clone();
         for e in 0..self.size {
             result_vector.entries[e] = result_vector.entries[e].sqrt();
-        }
-
-        result_vector
-    }
-
-        pub fn replace_nan(self: &Self) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..result_vector.size {
-            if result_vector.entries[e].is_nan() {
-                result_vector.entries[e] = 0.0;
-            
-            }
         }
 
         result_vector

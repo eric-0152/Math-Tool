@@ -1,12 +1,12 @@
+use crate::{eigen, solve};
 use crate::matrix::Matrix;
 use crate::vector::Vector;
 
 /// For shift_qr_algorithm
 fn similar_matrix(matrix: &Matrix) -> Result<Matrix, String> {
     match matrix.qr_decomposition() {
-        Ok(tuple) => Ok(tuple.1.multiply_Matrix(&tuple.0).unwrap()),
-
         Err(error_msg) => Err(error_msg),
+        Ok(tuple) => Ok(tuple.1.multiply_Matrix(&tuple.0).unwrap())
     }
 }
 
@@ -83,12 +83,11 @@ impl Matrix {
         }
 
         match matrix_d.inverse() {
+            Err(err_msg) => Err(err_msg),
             Ok(inverse_d) => {
                 let matrix_v: Matrix = inverse_d.multiply_Matrix(&matrix_u).unwrap();
                 Ok((matrix_l, matrix_d, matrix_v, permutation))
             }
-
-            Err(err_msg) => Err(err_msg),
         }
     }
 
@@ -130,6 +129,7 @@ impl Matrix {
     /// = ***L @ D^(1/2)^2 @ L^T = LDL^T***.
     pub fn ldlt_decomposition(self: &Self) -> Result<(Matrix, Matrix, Matrix), String> {
         match self.cholesky_decomposition() {
+            Err(error_msg) => Err(error_msg),
             Ok(tuple) => {
                 let matrix_c: Matrix = tuple.0;
                 let mut matrix_d: Matrix = Self::identity(self.row);
@@ -145,7 +145,6 @@ impl Matrix {
                 Ok((matrix_l.clone(), matrix_d, matrix_l.transpose()))
             }
 
-            Err(error_msg) => Err(error_msg),
         }
     }
 
@@ -159,7 +158,8 @@ impl Matrix {
     /// matrix contains inner products with ***A***.
     pub fn qr_decomposition(self: &Self) -> Result<(Matrix, Matrix), String> {
         match self.gram_schmidt() {
-            Ok(mut matrix_q) => {
+            Err(error_msg) => Err(error_msg),
+            Ok(matrix_q) => {
                 let mut matrix_r: Matrix = Matrix::zeros(self.col, self.col);
                 for r in 0..matrix_r.row {
                     let orthonormal_col: Vector = matrix_q.get_column_vector(r).unwrap();
@@ -171,11 +171,34 @@ impl Matrix {
                             .unwrap();
                     }
                 }
-                
+
                 Ok((matrix_q.replace_nan(), matrix_r.replace_nan()))
             }
+        }
+    }
 
+    pub fn singular_value_decomposition(self: &Self) -> Result<(Matrix, Matrix, Matrix), String> {
+        let ata: Matrix = self.transpose().multiply_Matrix(self).unwrap();
+        match eigen::eigenvalue_with_qr(&ata, 10000, 1e-32) {
             Err(error_msg) => Err(error_msg),
+            Ok(tuple) => {
+                // Remove if eigenvalue is 0.
+                let mut eigenvalue: Vec<f64> = Vec::new();  
+                for e in 0..tuple.0.size {
+                    if tuple.0.entries[e] == 0.0 {
+                        break;
+                    }
+                    eigenvalue.push(tuple.0.entries[e]);
+                }
+                
+                let eigenvalue: Vector = Vector::from_vec(&eigenvalue); 
+                for e in 0..eigenvalue.size {
+                    let eigenkernel = Matrix::identity(ata.row).multiply_scalar(&eigenvalue.entries[e]).substract_Matrix(&ata).unwrap();
+                    solve::null_space(&eigenkernel);
+                }
+
+                Ok((ata.clone(), ata.clone(), ata))
+            }
         }
     }
 }
