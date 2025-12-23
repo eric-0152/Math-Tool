@@ -1,5 +1,4 @@
 use crate::matrix::Matrix;
-use crate::vector::Vector;
 use crate::eigen;
 
 impl Matrix {
@@ -18,14 +17,14 @@ impl Matrix {
     /// &emsp; ***A = (LU).swap_with_permutation(P)***
     pub fn lu_decomposition(self: &Self) -> (Matrix, Matrix, Matrix) {
         let mut matrix_u: Matrix = self.clone();
-        let mut matrix_l: Matrix = Matrix::zeros(self.row, self.row);
-        let mut permutation: Matrix = Matrix::identity(self.row);
-        for c in 0..self.col.min(self.row) {
+        let mut matrix_l: Matrix = Matrix::zeros(self.shape.0, self.shape.0);
+        let mut permutation: Matrix = Matrix::identity(self.shape.0);
+        for c in 0..self.shape.1.min(self.shape.0) {
             // If the pivot is 0.0, swap to non zero.
-            if matrix_u.entries[c][c] == 0.0 {
+            if matrix_u.real[c][c] == 0.0 {
                 let mut is_swap = false;
-                for r in (c + 1)..matrix_u.row {
-                    if matrix_u.entries[r][c] != 0.0 {
+                for r in (c + 1)..matrix_u.shape.0 {
+                    if matrix_u.real[r][c] != 0.0 {
                         matrix_u = matrix_u.swap_row(c, r).unwrap();
                         matrix_l = matrix_l.swap_row(c, r).unwrap();
                         permutation = permutation.swap_row(c, r).unwrap();
@@ -38,14 +37,14 @@ impl Matrix {
                 }
             }
 
-            for r in (c + 1)..self.row {
-                matrix_l.entries[r][c] = matrix_u.entries[r][c] / matrix_u.entries[c][c];
-                for e in 0..self.col {
-                    matrix_u.entries[r][e] -= matrix_l.entries[r][c] * matrix_u.entries[c][e];
+            for r in (c + 1)..self.shape.0 {
+                matrix_l.real[r][c] = matrix_u.real[r][c] / matrix_u.real[c][c];
+                for e in 0..self.shape.1 {
+                    matrix_u.real[r][e] -= matrix_l.real[r][c] * matrix_u.real[c][e];
                 }
             }
         }
-        matrix_l = matrix_l.add_Matrix(&Matrix::identity(self.row)).unwrap();
+        matrix_l = &matrix_l + &Matrix::identity(self.shape.0);
 
         (matrix_l, matrix_u, permutation)
     }
@@ -69,15 +68,15 @@ impl Matrix {
         let matrix_l: Matrix = tuple.0;
         let matrix_u: Matrix = tuple.1;
         let permutation: Matrix = tuple.2;
-        let mut matrix_d: Matrix = Matrix::identity(self.row);
-        for d in 0..self.row.min(self.col) {
-            matrix_d.entries[d][d] = matrix_u.entries[d][d];
+        let mut matrix_d: Matrix = Matrix::identity(self.shape.0);
+        for d in 0..self.shape.0.min(self.shape.1) {
+            matrix_d.real[d][d] = matrix_u.real[d][d];
         }
 
         match matrix_d.inverse() {
             Err(err_msg) => Err(err_msg),
             Ok(inverse_d) => {
-                let matrix_v: Matrix = inverse_d.multiply_Matrix(&matrix_u).unwrap();
+                let matrix_v: Matrix = &inverse_d * &matrix_u;
                 Ok((matrix_l, matrix_d, matrix_v, permutation))
             }
         }
@@ -92,21 +91,21 @@ impl Matrix {
             return Err("Value Error: This matrix is not a positive definite matrix.".to_string());
         }
 
-        let mut matrix_l: Matrix = Matrix::zeros(self.row, self.col);
-        for r in 0..matrix_l.row {
+        let mut matrix_l: Matrix = Matrix::zeros(self.shape.0, self.shape.1);
+        for r in 0..matrix_l.shape.0 {
             for c in 0..(r + 1) {
                 let mut summation: f64 = 0.0;
                 if r == c {
                     for e in 0..c {
-                        summation += matrix_l.entries[c][e].powi(2);
+                        summation += matrix_l.real[c][e].powi(2);
                     }
-                    matrix_l.entries[r][c] = (self.entries[c][c] - summation).sqrt();
+                    matrix_l.real[r][c] = (self.real[c][c] - summation).sqrt();
                 } else {
                     for e in 0..c {
-                        summation += matrix_l.entries[r][e] * matrix_l.entries[c][e];
+                        summation += matrix_l.real[r][e] * matrix_l.real[c][e];
                     }
-                    matrix_l.entries[r][c] =
-                        (self.entries[r][c] - summation) / matrix_l.entries[c][c];
+                    matrix_l.real[r][c] =
+                        (self.real[r][c] - summation) / matrix_l.real[c][c];
                 }
             }
         }
@@ -124,13 +123,13 @@ impl Matrix {
             Err(error_msg) => Err(error_msg),
             Ok(tuple) => {
                 let matrix_c: Matrix = tuple.0;
-                let mut matrix_d: Matrix = Self::identity(self.row);
+                let mut matrix_d: Matrix = Self::identity(self.shape.0);
                 let mut matrix_l: Matrix = matrix_c.clone();
-                for d in 0..matrix_l.col {
-                    matrix_d.entries[d][d] = matrix_c.entries[d][d].powi(2);
-                    let inverse_sqrt_diagnol: f64 = matrix_d.entries[d][d].sqrt();
-                    for r in d..matrix_l.row {
-                        matrix_l.entries[r][d] = matrix_c.entries[r][d] / inverse_sqrt_diagnol;
+                for d in 0..matrix_l.shape.1 {
+                    matrix_d.real[d][d] = matrix_c.real[d][d].powi(2);
+                    let inverse_sqrt_diagnol: f64 = matrix_d.real[d][d].sqrt();
+                    for r in d..matrix_l.shape.0 {
+                        matrix_l.real[r][d] = matrix_c.real[r][d] / inverse_sqrt_diagnol;
                     }
                 }
 
@@ -153,20 +152,16 @@ impl Matrix {
             Ok(mut matrix_q) => {
                 let mut matrix: Matrix = self.clone();
                 let mut has_transpose: bool = false;
-                if matrix.row < matrix.col {
+                if matrix.shape.0 < matrix.shape.1 {
                     has_transpose = true;
                     matrix = matrix.transpose();
                 } 
 
-                let mut matrix_r: Matrix = Matrix::zeros(matrix.col, matrix.col);
-                for r in 0..matrix_r.row {
-                    let orthonormal_col: Vector = matrix_q.get_column_vector(r).unwrap();
-                    for c in r..matrix_r.col {
-                        matrix_r.entries[r][c] = matrix
-                            .get_column_vector(c)
-                            .unwrap()
-                            .inner_product(&orthonormal_col)
-                            .unwrap();
+                let mut matrix_r: Matrix = Matrix::zeros(matrix.shape.1, matrix.shape.1);
+                for r in 0..matrix_r.shape.0 {
+                    let orthonormal_col: Matrix = matrix_q.get_column_vector(r)?;
+                    for c in r..matrix_r.shape.1 {
+                        matrix_r.real[r][c] = (&matrix.get_column_vector(c)? * &orthonormal_col).real[0][0];
                     }
                 }
 
@@ -181,49 +176,46 @@ impl Matrix {
         }
     }
 
+    /// ## NEET TO FIX
     /// Return the tuple ***(U, Σ, V^T)***
     pub fn singular_value_decomposition(self: &Self) -> Result<(Matrix, Matrix, Matrix), String> {
-        let ata: Matrix = self.transpose().multiply_Matrix(self).unwrap();
+        let ata: Matrix = &self.transpose() * self;
         match eigen::eigenvalue(&ata, 1000, 1e-16) {
             Err(error_msg) => Err(error_msg),
             Ok(tuple) => {
                 // Get eigenvalue
                 const THERESHOLD: f64 = 1e-08;
-                let mut eigenvalue: Vector = tuple.0;
-                while eigenvalue.entries[eigenvalue.size - 1].abs() < THERESHOLD {
-                    eigenvalue = eigenvalue.remove(eigenvalue.size - 1).unwrap();
+                let mut eigenvalue: Matrix = tuple.0;
+                for e in (0..eigenvalue.shape.0).rev() {
+                    if eigenvalue.real[e][0] < THERESHOLD {
+                        eigenvalue = eigenvalue.remove_row(e)?;
+                    }
                 }
 
                 // Build V^T
                 let mut vt: Matrix = Matrix::zeros(0, 0);
-                for e in 0..eigenvalue.size {
+                for e in 0..eigenvalue.shape.0 {
                     let eigenvector: Matrix =
-                        eigen::eigenvector(&ata, eigenvalue.entries[e]).unwrap();
-                    for c in 0..eigenvector.col {
+                        eigen::eigenvector(&ata, eigenvalue.real[e][0])?;
+                    for c in 0..eigenvector.shape.1 {
                         vt = vt
-                            .append_Vector(
-                                &eigenvector.get_column_vector(c).unwrap().normalize(),
+                            .append(
+                                &eigenvector.get_column_vector(c)?.normalize(),
                                 0,
                             )
-                            .unwrap();
+                            ?;
                     }
                 }
 
                 // Build Σ
-                let sigma: Matrix = eigenvalue.square_root().to_diagonal();
+                let sigma: Matrix = eigenvalue.square_root();
                 
                 // Build U
                 let mut u: Matrix = Matrix::zeros(0, 0);
-                for r in 0..vt.row {
+                for r in 0..vt.shape.0 {
                     u = u
-                        .append_Vector(
-                            &self
-                                .multiply_Vector(&vt.get_row_vector(r).unwrap())
-                                .unwrap()
-                                .multiply_scalar(1.0 / sigma.entries[r][r]),
-                            1,
-                        )
-                        .unwrap();
+                        .append(&(&(self * &vt.get_row_vector(r)?) * (&(1.0_f64 / sigma.real[r][r]))), 1,)
+                        ?;
                 }
 
                 Ok((u, sigma, vt))

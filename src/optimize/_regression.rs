@@ -1,27 +1,22 @@
 use crate::matrix::Matrix;
-use crate::vector::Vector;
 
 /// Given a matrix ***A*** and a vecor of answer ***y***, return a vector ***x*** which |***Ax - y***| is minimized.
 ///
 /// ### Formula :
 /// &emsp; ***x = (A^T @ A)^-1 @ A^T @ y***
-pub fn least_squared_approximation(kernel_matrix: &Matrix, y: &Vector) -> Result<Vector, String> {
-    if kernel_matrix.row != y.size {
+pub fn least_squared_approximation(kernel_matrix: &Matrix, y: &Matrix) -> Result<Matrix, String> {
+    if y.shape.1 != 1 {
+        return Err("Input Error: The input y is not a vector.".to_string());
+    } else if kernel_matrix.shape.0 != y.shape.0 {
         return Err("Input Error: The size of vector does not match.".to_string());
     }
+
     let transposed_matrix: Matrix = kernel_matrix.transpose();
-    let result: Result<Matrix, String> = transposed_matrix
-        .multiply_Matrix(kernel_matrix)
-        .unwrap()
-        .inverse();
+    let result: Result<Matrix, String> = (&transposed_matrix * kernel_matrix).inverse();
 
     match result {
         Err(error_msg) => Err(error_msg),
-        Ok(inverse) => Ok(inverse
-            .multiply_Matrix(&transposed_matrix)
-            .unwrap()
-            .multiply_Vector(y)
-            .unwrap()),
+        Ok(inverse) => Ok(&(&inverse * &transposed_matrix) * y),
     }
 }
 
@@ -33,20 +28,24 @@ pub fn least_squared_approximation(kernel_matrix: &Matrix, y: &Vector) -> Result
 /// The coefficients vector after **least_squared_approximation()** is [[***c_0, c_1, ..., c_n***]],
 /// such that ***c_0 + c_1 x + ... c_n x^n = y***.
 pub fn polynomial_kernel(
-    x: &Vector,
-    y: &Vector,
+    x: &Matrix,
+    y: &Matrix,
     degree: usize,
-) -> Result<(Matrix, Vector), String> {
-    if x.size != y.size {
+) -> Result<(Matrix, Matrix), String> {
+    if x.shape.1 != 1 {
+        return Err("Input Error: The input x is not a vector.".to_string());
+    } else if y.shape.1 != 1 {
+        return Err("Input Error: The input y is not a vector.".to_string());
+    } else if x.shape.0 != y.shape.0 {
         return Err("Input Error: The size of x and y do not match.".to_string());
     }
 
-    let mut kernel_matrix: Matrix = Vector::ones(x.size).to_Matrix(1).unwrap();
-    let mut powered_x: Vector = x.clone();
+    let mut kernel_matrix: Matrix = Matrix::ones(x.shape.0, 1);
+    let mut powered_x: Matrix = x.clone();
     for _ in 0..degree {
-        kernel_matrix = kernel_matrix.append_Vector(&powered_x, 1).unwrap();
-        for s in 0..x.size {
-            powered_x.entries[s] *= x.entries[s];
+        kernel_matrix = kernel_matrix.append(&powered_x, 1)?;
+        for s in 0..x.shape.0 {
+            powered_x.real[s][0] *= x.real[s][0];
         }
     }
 
@@ -57,7 +56,7 @@ pub fn polynomial_kernel(
 ///
 /// Given a corresponding ***x*** and answer ***y***, using a polynomial function to do the
 /// regression.
-pub fn polynomial_regression(x: &Vector, y: &Vector, degree: usize) -> Result<Vector, String> {
+pub fn polynomial_regression(x: &Matrix, y: &Matrix, degree: usize) -> Result<Matrix, String> {
     match polynomial_kernel(x, y, degree) {
         Err(error_msg) => Err(error_msg),
         Ok(tuple) => match least_squared_approximation(&tuple.0, &tuple.1) {
@@ -70,24 +69,28 @@ pub fn polynomial_regression(x: &Vector, y: &Vector, degree: usize) -> Result<Ve
 /// Return a tuple that contains the kernel matrix which can be applied to **least_squared_approximation()**,
 /// and the vector ***f(x) = ln(y)***.
 ///
-/// Size of kernel matrix : x.size x 2.
+/// Size of kernel matrix : x.shape.0 x 2.
 ///
 /// The coefficients vector after **least_squared_approximation()** is [[***ln(c), a***]],
 /// such that ***ce^(ax) = y***.
 ///
 /// ### Formula :
 /// &emsp; ***y = ce^(ax)*** => ***ln(y) = ln(c)*** + ***ax***
-pub fn exponential_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), String> {
-    if x.size != y.size {
+pub fn exponential_kernel(x: &Matrix, y: &Matrix) -> Result<(Matrix, Matrix), String> {
+    if x.shape.1 != 1 {
+        return Err("Input Error: The input x is not a vector.".to_string());
+    } else if y.shape.1 != 1 {
+        return Err("Input Error: The input y is not a vector.".to_string());
+    } else if x.shape.0 != y.shape.0 {
         return Err("Input Error: The size of x and y do not match.".to_string());
     }
 
-    let mut kernel_matrix: Matrix = Vector::ones(x.size).to_Matrix(1).unwrap();
-    kernel_matrix = kernel_matrix.append_Vector(x, 1).unwrap();
+    let mut kernel_matrix: Matrix = Matrix::ones(x.shape.0, 1);
+    kernel_matrix = kernel_matrix.append(x, 1)?;
 
     let mut fx = y.clone();
-    for e in 0..fx.size {
-        fx.entries[e] = fx.entries[e].ln();
+    for e in 0..fx.shape.0 {
+        fx.real[e][0] = fx.real[e][0].ln();
     }
 
     Ok((kernel_matrix, fx))
@@ -97,7 +100,7 @@ pub fn exponential_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), St
 ///
 /// Given a corresponding ***x*** and answer ***y***, using a exponential function to do the
 /// regression.
-pub fn exponential_regression(x: &Vector, y: &Vector) -> Result<Vector, String> {
+pub fn exponential_regression(x: &Matrix, y: &Matrix) -> Result<Matrix, String> {
     match exponential_kernel(x, y) {
         Err(error_msg) => Err(error_msg),
         Ok(tuple) => match least_squared_approximation(&tuple.0, &tuple.1) {
@@ -110,7 +113,7 @@ pub fn exponential_regression(x: &Vector, y: &Vector) -> Result<Vector, String> 
 /// Return a tuple that contains the kernel matrix which can be applied to **least_squared_approximation()**, <br>
 /// and the vector ***fx = ln(y^2)***.
 ///
-/// Size of kernel matrix : x.size x 2.
+/// Size of kernel matrix : x.shape.0 x 2.
 ///
 /// The coefficients vector after **least_squared_approximation()** is [[***2 * ln(a), 1/c^2***]],
 /// such that
@@ -120,22 +123,22 @@ pub fn exponential_regression(x: &Vector, y: &Vector) -> Result<Vector, String> 
 /// &emsp; ***ln(y) = ln(a) + (-1/2 * ((x-μ)/c)^2)*** <br>
 /// &emsp; ***2 * ln(y) = 2 * ln(a) + -((x-μ)/c)^2*** <br>
 /// &emsp; ***2 * ln(y) = 2 * ln(a) + -((x-μ)^2 / c^2*** <br>
-pub fn gaussian_1d_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), String> {
-    if x.size != y.size {
+pub fn gaussian_1d_kernel(x: &Matrix, y: &Matrix) -> Result<(Matrix, Matrix), String> {
+    if x.shape.0 != y.shape.0 {
         return Err("Input Error: The size of x and y do not match.".to_string());
     }
 
-    let average: f64 = x.entries_sum() / x.size as f64;
-    let mut kernel_matrix: Matrix = Matrix::ones(x.size, 1);
-    kernel_matrix = kernel_matrix.append_Vector(x, 1).unwrap();
-    for e in 0..kernel_matrix.row {
-        kernel_matrix.entries[e][1] = -(kernel_matrix.entries[e][1] - average).powi(2);
+    let average: f64 = x.entries_sum() / x.shape.0 as f64;
+    let mut kernel_matrix: Matrix = Matrix::ones(x.shape.0, 1);
+    kernel_matrix = kernel_matrix.append(x, 1)?;
+    for e in 0..kernel_matrix.shape.0 {
+        kernel_matrix.real[e][1] = -(kernel_matrix.real[e][1] - average).powi(2);
     }
 
     let mut fx = y.clone();
 
-    for e in 0..fx.size {
-        fx.entries[e] = 2.0 * fx.entries[e].ln();
+    for e in 0..fx.shape.0 {
+        fx.real[e][0] = 2.0 * fx.real[e][0].ln();
     }
 
     Ok((kernel_matrix, fx))
@@ -145,7 +148,7 @@ pub fn gaussian_1d_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), St
 ///
 /// Given a corresponding ***x*** and answer ***y***, using a Gaussian 1D function to do the
 /// regression.
-pub fn gaussian_1d_regression(x: &Vector, y: &Vector) -> Result<Vector, String> {
+pub fn gaussian_1d_regression(x: &Matrix, y: &Matrix) -> Result<Matrix, String> {
     match gaussian_1d_kernel(x, y) {
         Err(error_msg) => Err(error_msg),
         Ok(tuple) => match least_squared_approximation(&tuple.0, &tuple.1) {

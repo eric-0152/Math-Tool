@@ -12,8 +12,6 @@ pub mod process;
 pub mod solve;
 #[path = "basic/_transform.rs"]
 pub mod transform;
-#[path = "basic/_vector.rs"]
-pub mod vector;
 
 #[path = "optimize/_mcmc.rs"]
 pub mod mcmc;
