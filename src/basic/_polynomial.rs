@@ -241,10 +241,8 @@ fn newton_raphson(poly: &Polynomial) -> Result<Complex64, String> {
     // contain some value, and if we add them up: x = (a.re + b.im) + (b.re + a.im)j, then
     // we will get right result. I don't know why this works, but it works.
     if param.round(5).entries[0].im.abs() > THRESHOLD || param.round(5).entries[1].im.abs() > THRESHOLD {
-        println!("1");
         Ok(Complex64::new(param.entries[0].re + param.entries[1].im, param.entries[1].re + param.entries[0].im))
     } else {
-        println!("2");
         Ok(Complex64::new(param.entries[0].re, param.entries[1].re))
     }
 }
