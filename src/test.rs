@@ -4,3 +4,7 @@ mod _eigen;
 mod _solve;
 #[path ="./test/_matrix/test.rs"]
 mod _matrix;
+#[path ="./test/_regression/test.rs"]
+mod _regression;
+#[path ="./test/_polynomial/test.rs"]
+mod _polynomial;

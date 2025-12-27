@@ -11,7 +11,10 @@ pub fn least_squared_approximation(kernel: &Matrix, y: &Vector) -> Result<Vector
 
     let transposed_kernel: Matrix = kernel.transpose();
     let result: Result<Matrix, String> = (&transposed_kernel * kernel).inverse();
-
+    // result.clone()?.display();
+    // transposed_kernel.display();
+    // (&result.clone()? * &transposed_kernel).display();
+    (&(&result.clone()? * &transposed_kernel) * y).display();
     match result {
         Err(error_msg) => Err(error_msg),
         Ok(inverse) => Ok(&(&inverse * &transposed_kernel) * y),
@@ -138,7 +141,7 @@ pub fn gaussian_1d_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), St
 /// ### Formula :
 /// &emsp; ***a e^((-1 / 2) * ((x - μ) / c)^2) = y***.
 /// 
-/// ### Return a matrix which contains the coefficients(a, c).
+/// ### Return a matrix which contains the coefficients(a, \c).
 pub fn gaussian_1d_regression(x: &Vector, y: &Vector) -> Result<Vector, String> {
     match gaussian_1d_kernel(x, y) {
         Err(error_msg) => Err(error_msg),

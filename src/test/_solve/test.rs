@@ -1,7 +1,4 @@
-use crate::matrix::Matrix;
-use crate::polynomial::Polynomial;
-use crate::solve;
-use crate::eigen;
+use linalg::{to_matrix, matrix::Matrix, solve};
 
 #[test]
 fn null_space() {

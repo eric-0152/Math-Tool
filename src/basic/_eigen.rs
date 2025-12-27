@@ -119,11 +119,7 @@ pub fn lambda_polynomial(matrix: &Matrix) -> Polynomial {
     sub_determinant(&poly_matrix)
 }
 
-/// ## NEED TO FIX
-/// ## Can not return complex eigenvalue
 /// Return a vector which contains eigenvalue of matrix and the difference.
-///
-/// Check the difference, if it's too large, the eigenvalue may contains complex number.
 pub fn eigenvalue(
     matrix: &Matrix
 ) -> Result<Vector, String> {
@@ -132,8 +128,8 @@ pub fn eigenvalue(
     }
     
     let lambda_function = lambda_polynomial(&matrix);
-    let eigenvalues = polynomial::newton_raphson(&lambda_function);
-    Ok(eigenvalues?)
+    let eigenvalues = polynomial::find_root(&lambda_function);
+    Ok(eigenvalues)
 }
 
 pub fn eigenvector(

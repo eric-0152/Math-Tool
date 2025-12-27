@@ -1,5 +1,4 @@
-use math_tool::to_matrix;
-use crate::matrix::Matrix;
+use linalg::{to_matrix, matrix::Matrix};
 
 #[test]
 fn inverse() {    

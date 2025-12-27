@@ -1,8 +1,7 @@
-use std::ops::{Add, Mul, Sub, Div};
+use std::ops::{Add, Mul, Sub, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg};
 use rand::Rng;
 use num_complex::Complex64;
 use crate::matrix::Matrix;
-use crate::io;
 
 #[derive(Clone, Debug)]
 pub struct Vector {
@@ -10,228 +9,6 @@ pub struct Vector {
     pub entries: Vec<Complex64>,
 }
 
-
-
-#[macro_export]
-macro_rules! to_vector {
-    (
-        [$( $e:expr),*] 
-    ) => {{
-        let mut elements = Vec::new();
-        $(
-            elements.push(io::_parse_str(format!("{}", $e).as_str()).unwrap());
-        )*
-
-        vector::Vector::new(&elements)
-    }};
-}
-
-
-impl Add<&Vector> for &Vector {
-    type Output = Vector;
-    fn add(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += vector.entries[e];
-        }
-
-        result_vector
-    }
-}
-impl Add<f64> for &Vector {
-    type Output = Vector;
-    fn add(self: Self, constant: f64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += constant;
-        }
-
-        result_vector
-    }
-}
-impl Add<Complex64> for &Vector {
-    type Output = Vector;
-    fn add(self: Self, constant: Complex64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += constant;
-        }
-
-        result_vector
-    }
-}
-impl Add<&Vector> for f64 {
-    type Output = Vector;
-    fn add(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-
-        result_vector
-    }
-}
-impl Add<&Vector> for Complex64 {
-    type Output = Vector;
-    fn add(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-
-        result_vector
-    }
-}
-
-impl Sub for &Vector {
-    type Output = Vector;
-    fn sub(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] -= vector.entries[e];
-        }
-
-        result_vector
-    }
-}
-
-impl Sub<f64> for &Vector {
-    type Output = Vector;
-    fn sub(self: Self, constant: f64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] -= constant;
-        }
-
-        result_vector
-    }
-}
-impl Sub<Complex64> for Vector {
-    type Output = Vector;
-    fn sub(self: Self, constant: Complex64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] -= constant;
-        }
-        
-        result_vector
-    }
-}
-impl Sub<&Vector> for f64 {
-    type Output = Vector;
-    fn sub(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = -1.0 * &vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-        
-        result_vector
-    }
-}
-impl Sub<&Vector> for Complex64 {
-    type Output = Vector;
-    fn sub(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = -1.0 * &vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-
-        result_vector
-    }
-}
-impl Mul<f64> for &Vector {
-    type Output = Vector;
-    fn mul(self: Self, scalar: f64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] *= scalar;
-        }
-
-        result_vector
-    }
-}
-impl Mul<Complex64> for &Vector {
-    type Output = Vector;
-    fn mul(self: Self, scalar: Complex64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] *= scalar;
-        }
-
-        result_vector
-    }
-}
-impl Mul<&Vector> for f64 {
-    type Output = Vector;
-
-    fn mul(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] *= self;
-        }
-
-        result_vector
-    }
-}
-impl Mul<&Vector> for Complex64 {
-    type Output = Vector;
-
-    fn mul(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] *= self;
-        }
-
-        result_vector
-    }
-}
-
-impl Div<f64> for &Vector {
-    type Output = Vector;
-    fn div(self: Self, scalar: f64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] /= scalar;
-        }
-
-        result_vector
-    }
-}
-impl Div<Complex64> for &Vector {
-    type Output = Vector;
-    fn div(self: Self, scalar: Complex64) -> Vector {
-        let mut result_vector: Vector = self.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] /= scalar;
-        }
-
-        result_vector
-    }
-}
-impl Div<&Vector> for f64 {
-    type Output = Vector;
-
-    fn div(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] /= self;
-        }
-
-        result_vector
-    }
-}
-impl Div<&Vector> for Complex64 {
-    type Output = Vector;
-
-    fn div(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] /= self;
-        }
-
-        result_vector
-    }
-}
 
 
 impl Vector {
@@ -243,7 +20,7 @@ impl Vector {
     }
 
     /// Return the size that round to the digit after decimal point.
-    pub fn round(self: &Self, digit: u32) -> Vector {
+    pub fn round(self: &Self, digit: usize) -> Vector {
         let mut result_vector: Vector = self.clone();
         let scale: f64 = 10_i32.pow(digit as u32) as f64;
         for e in 0..self.size {
@@ -531,5 +308,266 @@ impl Vector {
         }
 
         result_vector
+    }
+}
+
+
+impl Add<&Vector> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn add(self: Self, vector: &Vector) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..self.size {
+            result_vector.entries[e] += vector.entries[e];
+        }
+
+        result_vector
+    }
+}
+impl Add<f64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn add(self: Self, constant: f64) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..self.size {
+            result_vector.entries[e] += constant;
+        }
+
+        result_vector
+    }
+}
+impl Add<Complex64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn add(self: Self, constant: Complex64) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..self.size {
+            result_vector.entries[e] += constant;
+        }
+
+        result_vector
+    }
+}
+impl Add<&Vector> for f64 {
+    type Output = Vector;
+    #[inline]
+    fn add(self: Self, vector: &Vector) -> Vector {
+        let mut result_vector: Vector = vector.clone();
+        for e in 0..vector.size {
+            result_vector.entries[e] += self;
+        }
+
+        result_vector
+    }
+}
+impl Add<&Vector> for Complex64 {
+    type Output = Vector;
+    #[inline]
+    fn add(self: Self, vector: &Vector) -> Vector {
+        let mut result_vector: Vector = vector.clone();
+        for e in 0..vector.size {
+            result_vector.entries[e] += self;
+        }
+
+        result_vector
+    }
+}
+
+impl Sub for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn sub(self: Self, vector: &Vector) -> Vector {
+        self + &(-1.0 * vector)
+    }
+}
+
+impl Sub<f64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn sub(self: Self, constant: f64) -> Vector {
+        self + -constant
+    }
+}
+impl Sub<Complex64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn sub(self: Self, constant: Complex64) -> Vector {
+        self + -constant
+    }
+}
+impl Sub<&Vector> for f64 {
+    type Output = Vector;
+    #[inline]
+    fn sub(self: Self, vector: &Vector) -> Vector {
+        self + &(-1.0 * vector)
+    }
+}
+impl Sub<&Vector> for Complex64 {
+    type Output = Vector;
+    #[inline]
+    fn sub(self: Self, vector: &Vector) -> Vector {
+        self + &(-1.0 * vector)
+    }
+}
+impl Mul<f64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn mul(self: Self, scalar: f64) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..self.size {
+            result_vector.entries[e] *= scalar;
+        }
+
+        result_vector
+    }
+}
+impl Mul<Complex64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn mul(self: Self, scalar: Complex64) -> Vector {
+        let mut result_vector: Vector = self.clone();
+        for e in 0..self.size {
+            result_vector.entries[e] *= scalar;
+        }
+
+        result_vector
+    }
+}
+impl Mul<&Vector> for f64 {
+    type Output = Vector;
+    #[inline]
+    fn mul(self: Self, vector: &Vector) -> Vector {
+        let mut result_vector: Vector = vector.clone();
+        for e in 0..result_vector.size {
+            result_vector.entries[e] *= self;
+        }
+
+        result_vector
+    }
+}
+impl Mul<&Vector> for Complex64 {
+    type Output = Vector;
+    #[inline]
+    fn mul(self: Self, vector: &Vector) -> Vector {
+        let mut result_vector: Vector = vector.clone();
+        for e in 0..result_vector.size {
+            result_vector.entries[e] *= self;
+        }
+
+        result_vector
+    }
+}
+
+impl Div<f64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn div(self: Self, scalar: f64) -> Vector {
+        if scalar != 0.0 {
+            self * (1.0 / scalar)
+        } else {
+            panic!("Division by zero");
+        }
+    }
+}
+impl Div<Complex64> for &Vector {
+    type Output = Vector;
+    #[inline]
+    fn div(self: Self, scalar: Complex64) -> Vector {
+        if scalar != Complex64::ZERO {
+            self * (1.0 / scalar)
+        } else {
+            panic!("Division by zero");
+        }
+    }
+}
+impl Div<&Vector> for f64 {
+    type Output = Vector;
+    #[inline]
+    fn div(self: Self, vector: &Vector) -> Vector {
+        if self != 0.0 {
+            (1.0 / self) * vector
+        } else {
+            panic!("Division by zero");
+        }
+    }
+}
+impl Div<&Vector> for Complex64 {
+    type Output = Vector;
+    #[inline]
+    fn div(self: Self, vector: &Vector) -> Vector {
+        if self != Complex64::ZERO {
+            (1.0 / self) * vector
+        } else {
+            panic!("Division by zero");
+        }
+    }
+}
+
+
+impl AddAssign for Vector {
+    #[inline]
+    fn add_assign(&mut self, other: Vector) {
+        *self = &self.clone() + &other;
+    }
+}
+impl AddAssign<f64> for Vector {
+    #[inline]
+    fn add_assign(&mut self, other: f64) {
+        *self = &self.clone() + other;
+    }
+}
+impl AddAssign<Complex64> for Vector {
+    #[inline]
+    fn add_assign(&mut self, other: Complex64) {
+        *self = &self.clone() + other;
+    }
+}
+impl SubAssign for Vector {
+    #[inline]
+    fn sub_assign(&mut self, other: Vector) {
+        *self = &self.clone() - &other;
+    }
+}
+impl SubAssign<f64> for Vector {
+    #[inline]
+    fn sub_assign(&mut self, other: f64) {
+        *self = &self.clone() - other;
+    }
+}
+impl SubAssign<Complex64> for Vector {
+    #[inline]
+    fn sub_assign(&mut self, other: Complex64) {
+        *self = &self.clone() - other;
+    }
+}
+impl Neg for Vector {
+    type Output = Vector;
+    #[inline]
+    fn neg(self: Self) -> Vector {
+        -1.0 * &self.clone()
+    }
+}
+impl MulAssign<f64> for Vector {
+    #[inline]
+    fn mul_assign(&mut self, other: f64) {
+        *self = &self.clone() * other;
+    }
+}
+impl MulAssign<Complex64> for Vector {
+    #[inline]
+    fn mul_assign(&mut self, other: Complex64) {
+        *self = &self.clone() * other;
+    }
+}
+impl DivAssign<f64> for Vector {
+    #[inline]
+    fn div_assign(&mut self, other: f64) {
+        *self = &self.clone() / other;
+    }
+}
+impl DivAssign<Complex64> for Vector {
+    #[inline]
+    fn div_assign(&mut self, other: Complex64) {
+        *self = &self.clone() / other;
     }
 }
